@@ -63,7 +63,7 @@ function App() {
       }
 
       if (id === 'ig') {
-        const token = (import.meta as any).env.VITE_INSTAGRAM_CLIENT_ID
+        const token = (import.meta as any).env.VITE_FACEBOOK_APP_ID // Dùng chung Token với Facebook
         if (checkTokenValidity(token)) {
           const result = await publishToInstagram(content, mediaItems, token)
           setPublishResults(prev => ({
@@ -77,7 +77,7 @@ function App() {
       }
 
       if (id === 'threads') {
-        const token = (import.meta as any).env.VITE_INSTAGRAM_CLIENT_ID // Thử dùng chung Token User (Nếu hữu dụng)
+        const token = (import.meta as any).env.VITE_THREAD_CLIENT_KEY // Đọc Token Threads (THAA...)
         const result = await publishToThreads(content, mediaItems, token)
         setPublishResults(prev => ({
           ...prev,

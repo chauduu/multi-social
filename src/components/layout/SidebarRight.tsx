@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react'
 
 const PLATFORMS = [
   { id: 'fb', name: 'Facebook', icon: Facebook, color: 'text-blue-600', activeColor: 'bg-blue-600/10', envKey: 'VITE_FACEBOOK_APP_ID', placeholder: 'your_fb_app_id' },
-  { id: 'ig', name: 'Instagram', icon: Instagram, color: 'text-pink-600', activeColor: 'bg-pink-600/10', envKey: 'VITE_INSTAGRAM_CLIENT_ID', placeholder: 'your_ig_id' },
+  { id: 'ig', name: 'Instagram', icon: Instagram, color: 'text-pink-600', activeColor: 'bg-pink-600/10', envKey: 'VITE_FACEBOOK_APP_ID', placeholder: 'your_fb_app_id' },
   { id: 'tiktok', name: 'TikTok', icon: Music, color: 'text-teal-400', activeColor: 'bg-teal-400/10', envKey: 'VITE_TIKTOK_CLIENT_KEY', placeholder: 'your_tiktok_key' },
   { id: 'x', name: 'X (Twitter)', icon: Twitter, color: 'text-white', activeColor: 'bg-white/10', envKey: 'VITE_X_API_KEY', placeholder: 'your_x_api_key' },
-  { id: 'threads', name: 'Threads', icon: MessageSquare, color: 'text-purple-600', activeColor: 'bg-purple-600/10', envKey: 'VITE_THREADS_APP_ID', placeholder: 'your_threads_id' },
+  { id: 'threads', name: 'Threads', icon: MessageSquare, color: 'text-purple-600', activeColor: 'bg-purple-600/10', envKey: 'VITE_THREAD_CLIENT_KEY', placeholder: 'your_threads_key' },
 ]
 
 interface SidebarRightProps {
@@ -53,15 +53,6 @@ export default function SidebarRight({ className = '', onSelectionChange }: Side
     )
   }
 
-  const toggleOption = (channelId: string, option: 'post' | 'story') => {
-    setSettings(prev => ({
-      ...prev,
-      [channelId]: {
-        ...prev[channelId],
-        [option]: !prev[channelId][option]
-      }
-    }))
-  }
 
   return (
     <aside className={`h-full flex flex-col p-6 space-y-6 ${className}`}>
@@ -106,19 +97,6 @@ export default function SidebarRight({ className = '', onSelectionChange }: Side
                 </button>
               </div>
 
-              {isActive && (
-                <div className="mt-3 pt-3 border-t border-slate-800 space-y-2">
-                  <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer hover:text-white transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={settings[platform.id]?.post ?? true}
-                      onChange={() => toggleOption(platform.id, 'post')}
-                      className="rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500/20"
-                    />
-                    <span>Đăng bài viết</span>
-                  </label>
-                </div>
-              )}
             </div>
           )
         })}

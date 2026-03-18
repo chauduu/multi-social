@@ -124,8 +124,8 @@ export const publishToInstagram = async (content: string, mediaItems: any[], tok
     // Step 2: Tạo Photo/Video Container
     const createResponse = await fetch(`https://graph.facebook.com/v21.0/${igUserId}/media`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
         image_url: firstItem.url,
         caption: content,
         access_token: pageToken
@@ -143,8 +143,8 @@ export const publishToInstagram = async (content: string, mediaItems: any[], tok
     // Step 3: Publish Container
     const publishResponse = await fetch(`https://graph.facebook.com/v21.0/${igUserId}/media_publish`, {
        method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({
+       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+       body: new URLSearchParams({
           creation_id: creationId,
           access_token: pageToken
        })
@@ -153,7 +153,7 @@ export const publishToInstagram = async (content: string, mediaItems: any[], tok
     const publishData = await publishResponse.json()
 
     if (publishData.id) {
-       return { success: true, link: `https://www.instagram.com/` }
+       return { success: true, link: `https://www.instagram.com/duchu.craft/` }
     } else {
        throw new Error(publishData.error?.message || 'Lỗi khi phát hành bài viết lên Instagram.')
     }
@@ -164,35 +164,36 @@ export const publishToInstagram = async (content: string, mediaItems: any[], tok
 
 export const publishToThreads = async (content: string, mediaItems: any[], token: string) => {
   try {
-    if (!token || !token.startsWith('EAA')) {
-       throw new Error("Threads: Yêu cầu Threads/FB User Access Token để tạo bài (Ví dụ Token bắt đầu bằng 'EAA'). Đăng bài API từ Web yêu cầu cấu hình token thật.")
+    if (!token || token.trim().length < 10) {
+       throw new Error("Threads: Yêu cầu Threads User Access Token để tạo bài. Đăng bài API từ Web yêu cầu cấu hình token thật.")
     }
 
     const firstMedia = mediaItems[0]
     let mediaType = "TEXT"
+    let imageUrl = ""
     
     if (firstMedia && firstMedia.type === 'image') {
        mediaType = "IMAGE"
+       if (firstMedia.url.startsWith('blob:') || firstMedia.url.startsWith('http://localhost')) {
+          throw new Error('Đăng ảnh trên Threads yêu cầu URL công khai. Blob cục bộ / Ảnh AI hiện chưa hỗ trợ đẩy qua FE trực tiếp (Cần một Backend).')
+       }
+       imageUrl = firstMedia.url
     }
 
-    const postBody: any = {
+    // Bước 1: Khởi tạo container bài đăng
+    const createParams: any = {
        media_type: mediaType,
        text: content,
        access_token: token
     }
-
-    if (mediaType === "IMAGE" && firstMedia) {
-       if (firstMedia.url.startsWith('blob:') || firstMedia.url.startsWith('http://localhost')) {
-          throw new Error('Đăng ảnh trên Threads yêu cầu URL công khai. Blob cục bộ / Ảnh AI hiện chưa hỗ trợ đẩy qua FE trực tiếp (Cần Backend).')
-       }
-       postBody.image_url = firstMedia.url
+    if (mediaType === "IMAGE") {
+       createParams.image_url = imageUrl
     }
 
-    // Bước 1: Khởi tạo container bài đăng
     const createResponse = await fetch(`https://graph.threads.net/v1.0/me/threads`, {
        method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify(postBody)
+       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+       body: new URLSearchParams(createParams)
     })
 
     const createData = await createResponse.json()
@@ -206,8 +207,8 @@ export const publishToThreads = async (content: string, mediaItems: any[], token
     // Bước 2: Phát hành bài đăng
     const publishResponse = await fetch(`https://graph.threads.net/v1.0/me/threads_publish`, {
        method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({
+       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+       body: new URLSearchParams({
           creation_id: creationId,
           access_token: token
        })
@@ -216,7 +217,7 @@ export const publishToThreads = async (content: string, mediaItems: any[], token
     const publishData = await publishResponse.json()
 
     if (publishData.id) {
-       return { success: true, link: `https://www.threads.net/` }
+       return { success: true, link: `https://www.threads.net/@duchu.craft` }
     } else {
        throw new Error(publishData.error?.message || 'Lỗi khi phát hành bài viết lên Threads.')
     }
