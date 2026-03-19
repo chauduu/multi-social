@@ -9,12 +9,11 @@ import { publishToFacebook, publishToInstagram, publishToThreads, checkTokenVali
 
 function App() {
   const [content, setContent] = useState('')
-  const [mediaItems, setMediaItems] = useState<any[]>([
-    { id: 1, type: 'image', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1000&auto=format&fit=crop', name: 'abstract-1.jpg' },
-  ])
+  const [mediaItems, setMediaItems] = useState<any[]>([])
   
   const [publishing, setPublishing] = useState(false)
   const [publishResults, setPublishResults] = useState<Record<string, { status: 'pending' | 'success' | 'failed'; link?: string; error?: string }>>({})
+  const [apiKeys, setApiKeys] = useState<Record<string, string>>({})
 
   const [publishSchedule, setPublishSchedule] = useState<'now' | 'scheduled'>('now')
   const [scheduleTime, setScheduleTime] = useState('')
@@ -30,8 +29,15 @@ function App() {
 
   const handlePublish = async () => {
     const channels = Object.keys(selectedChannels)
+    const selectedMedia = mediaItems.filter(m => m.selected)
+
     if (channels.length === 0) {
       alert('Vui lòng bật bật/kết nối ít nhất một mạng xã hội để đăng bài.')
+      return
+    }
+
+    if (selectedMedia.length === 0) {
+      alert('Vui lòng chọn ít nhất một hình ảnh hoặc video để đăng.')
       return
     }
 
@@ -49,9 +55,9 @@ function App() {
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 300))
 
       if (id === 'fb') {
-        const token = (import.meta as any).env.VITE_FACEBOOK_APP_ID // User token
+        const token = apiKeys['fb'] || (import.meta as any).env.VITE_FACEBOOK_APP_ID
         if (checkTokenValidity(token)) {
-          const result = await publishToFacebook(content, mediaItems, token)
+          const result = await publishToFacebook(content, selectedMedia, token)
           setPublishResults(prev => ({
             ...prev,
             [id]: result.success 
@@ -63,9 +69,9 @@ function App() {
       }
 
       if (id === 'ig') {
-        const token = (import.meta as any).env.VITE_FACEBOOK_APP_ID // Dùng chung Token với Facebook
+        const token = apiKeys['fb'] || (import.meta as any).env.VITE_FACEBOOK_APP_ID
         if (checkTokenValidity(token)) {
-          const result = await publishToInstagram(content, mediaItems, token)
+          const result = await publishToInstagram(content, selectedMedia, token)
           setPublishResults(prev => ({
             ...prev,
             [id]: result.success 
@@ -77,14 +83,14 @@ function App() {
       }
 
       if (id === 'threads') {
-        const token = (import.meta as any).env.VITE_THREAD_CLIENT_KEY // Đọc Token Threads (THAA...)
-        const result = await publishToThreads(content, mediaItems, token)
+        const token = apiKeys['threads'] || (import.meta as any).env.VITE_THREAD_CLIENT_KEY
+        const result = await publishToThreads(content, selectedMedia, token)
         setPublishResults(prev => ({
           ...prev,
           [id]: result.success 
             ? { status: 'success', link: result.link } 
             : { status: 'failed', error: result.error }
-        }))
+          }))
         continue
       }
 
@@ -100,7 +106,7 @@ function App() {
   }
 
   const handleAddMedia = (item: any) => {
-    setMediaItems(prev => [...prev, item])
+    setMediaItems(prev => [...prev, { ...item, selected: true }])
   }
 
   const handleRemoveMedia = (id: number) => {
@@ -118,13 +124,19 @@ function App() {
       <main className="flex flex-1 overflow-hidden">
         {/* Left column: Chatbox */}
         <div className="w-1/4 border-r border-slate-800 flex flex-col">
-          <ChatBox onGenerateContent={setContent} onImageGenerated={handleAddMedia} />
+          <ChatBox content={content} mediaItems={mediaItems} onGenerateContent={setContent} onImageGenerated={handleAddMedia} />
         </div>
         
         {/* Center column: Editor & Media */}
         <div className="w-2/4 flex flex-col p-6 overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-slate-800">
           <ContentEditor content={content} onChange={setContent} />
-          <MediaPreview items={mediaItems} onRemove={handleRemoveMedia} onAdd={handleAddMedia} />
+          <MediaPreview 
+            items={mediaItems} 
+            onRemove={handleRemoveMedia} 
+            onAdd={handleAddMedia} 
+            onToggleSelect={(id: number) => setMediaItems(prev => prev.map(m => m.id === id ? { ...m, selected: !m.selected } : m))}
+            content={content}
+          />
           
           <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-4 mt-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -172,7 +184,7 @@ function App() {
         </div>
         
         {/* Right column: Social Channels */}
-        <SidebarRight onSelectionChange={setSelectedChannels} className="w-1/4 border-l border-slate-800 flex flex-col" />
+        <SidebarRight onSelectionChange={setSelectedChannels} onKeysChange={setApiKeys} className="w-1/4 border-l border-slate-800 flex flex-col" />
       </main>
 
       {/* Sequential Publishing Modal */}
